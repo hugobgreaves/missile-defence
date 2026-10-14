@@ -6,7 +6,7 @@ function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}addEventListener('re
 const GR='#3f6',keys={};let state='start',score=0,hp=1,kills=0,level=1,hi=+(localStorage.getItem('md_hi')||0),best=+(localStorage.getItem('md_best')||1);
 let pm=null,enemies=[],shrap=[],parts=[],spawnLeft=0,spawnT=0,waveMsg=0,sweep=0,flash=0;
 const L=()=>({x:W/2,y:H-40});
-function reset(){score=0;hp=1;kills=0;level=1;pm=null;enemies=[];shrap=[];parts=[];startWave()}
+function reset(){paused=false;score=0;hp=1;kills=0;level=1;pm=null;enemies=[];shrap=[];parts=[];startWave()}
 function startWave(){spawnT=2.5;waveMsg=2}
 const spd=()=>1+kills*.03;
 function boom(x,y,n,c){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=Math.random()*180+30;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:.4+Math.random()*.6,c})}}
@@ -14,11 +14,16 @@ function fire(){const l=L();pm={x:l.x,y:l.y-20,a:-Math.PI/2,v:260,trail:[]}}
 function detonate(){for(let i=0;i<24;i++){const a=i/24*6.28;shrap.push({x:pm.x,y:pm.y,vx:Math.cos(a)*220+Math.cos(pm.a)*pm.v*.3,vy:Math.sin(a)*220+Math.sin(pm.a)*pm.v*.3,t:.9})}boom(pm.x,pm.y,30,'#ff8');pm=null}
 function spawn(){const sp=Math.pow(1.15,level-1),x=W*.05+Math.random()*W*.9,y=-10,l=L(),an=Math.atan2(l.y-y,l.x-x);enemies.push({k:'msl',x,y,a:an,base:an,v:45*sp,r:6,t:0})}
 addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(keys[e.code])return;keys[e.code]=1;
+if(e.code==='KeyP'||e.code==='Escape'){togglePause();return}
+if(paused)return;
 if(e.code==='Space'){if(state==='over'&&overT>0);else if(state!=='play'){reset();state='play'}else if(pm)detonate();else fire()}});
+let paused=false;const PB=()=>({x:W-56,y:40,w:40,h:32});function togglePause(){if(state==='play')paused=!paused}
+cv.addEventListener('pointerdown',ev=>{const b=PB(),r=cv.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top;if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h)togglePause()});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=0});
 addEventListener('keyup',e=>keys[e.code]=0);
 function miss(e){score+=10*level;kills++;level=kills+1;waveMsg=1.2}
 function kill(e,i){enemies.splice(i,1);score+=10*level;kills++;level=kills+1;waveMsg=1.2;boom(e.x,e.y,e.k==='air'?40:20,'#fa3')}
-let overT=0;function upd(dt){sweep+=dt*1.5;overT-=dt;if(state!=='play')return;waveMsg-=dt;flash-=dt;
+let overT=0;function upd(dt){if(paused)return;sweep+=dt*1.5;overT-=dt;if(state!=='play')return;waveMsg-=dt;flash-=dt;
 
 if(pm){if(keys.ArrowLeft)pm.a-=2.8*dt;if(keys.ArrowRight)pm.a+=2.8*dt;if(keys.ArrowUp)pm.v=Math.min(600,pm.v+400*dt);if(keys.ArrowDown)pm.v=Math.max(80,pm.v-400*dt);
 pm.x+=Math.cos(pm.a)*pm.v*dt;pm.y+=Math.sin(pm.a)*pm.v*dt;pm.trail.push([pm.x,pm.y]);if(pm.trail.length>30)pm.trail.shift();
@@ -55,6 +60,8 @@ if(flash>0){g.fillStyle='rgba(255,40,40,'+flash+')';g.fillRect(0,0,W,H)}
 txt('SCORE '+score,16,28,18,GR,'left');txt('LEVEL '+level,W/2,28,18);txt('BEST LVL '+Math.max(best,level),W-16,28,18,GR,'right');
 
 if(state==='play'&&waveMsg>0)txt('LEVEL '+level,W/2,H/2,40);
+if(state==='play'){const b=PB();g.strokeStyle=GR;g.lineWidth=1.5;g.strokeRect(b.x,b.y,b.w,b.h);g.fillStyle=GR;if(paused){g.beginPath();g.moveTo(b.x+15,b.y+8);g.lineTo(b.x+28,b.y+16);g.lineTo(b.x+15,b.y+24);g.fill()}else{g.fillRect(b.x+13,b.y+8,5,16);g.fillRect(b.x+22,b.y+8,5,16)}
+if(paused){g.fillStyle='rgba(0,10,4,.6)';g.fillRect(0,0,W,H);txt('PAUSED',W/2,H/2,44);txt('P / ESC or button to resume',W/2,H/2+36,16)}}
 if(state!=='play'){g.fillStyle='rgba(0,10,4,.75)';g.fillRect(0,0,W,H);const y=H/2-110;
 txt(state==='over'?'LAUNCHER DESTROYED':'MISSILE DEFENCE',W/2,y,40,state==='over'?'#f44':GR);
 if(state==='over')txt('LEVEL REACHED '+level+'   BEST LEVEL '+best+'   SCORE '+score,W/2,y+40,20);
