@@ -12,21 +12,29 @@ const spd=()=>1+kills*.03;
 function boom(x,y,n,c){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=Math.random()*180+30;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:.4+Math.random()*.6,c})}}
 function fire(){const l=L();pm={x:l.x,y:l.y-20,a:-Math.PI/2,v:260,trail:[]}}
 function detonate(){for(let i=0;i<24;i++){const a=i/24*6.28;shrap.push({x:pm.x,y:pm.y,vx:Math.cos(a)*220+Math.cos(pm.a)*pm.v*.3,vy:Math.sin(a)*220+Math.sin(pm.a)*pm.v*.3,t:.9})}boom(pm.x,pm.y,30,'#ff8');pm=null}
-function spawn(){const sp=spd();if(Math.random()<Math.min(.15+level*.03,.4)){const left=Math.random()<.5;enemies.push({k:'air',x:left?-30:W+30,y:60+Math.random()*H*.3,vx:(left?1:-1)*(60*sp),vy:0,drop:1+Math.random()*2,r:14})}
-else{let x,y;const s=Math.random();if(s<.75){x=Math.random()*W;y=-10}else{x=s<.8?-10:W+10;y=Math.random()*H*.4}const l=L(),d=Math.hypot(l.x-x,l.y-y),v=40*sp;enemies.push({k:'msl',x,y,vx:(l.x-x)/d*v,vy:(l.y-y)/d*v,r:6})}}
+function spawn(){const sp=1+(level-1)*.12;let e;
+if(level>=2&&Math.random()<.3){const left=Math.random()<.5;e={k:'air',x:left?-30:W+30,y:60+Math.random()*H*.25,a:left?0:Math.PI,v:70*sp,r:14,dive:1.5+Math.random()*2.5}}
+else{let x,y;const s=Math.random();if(s<.75){x=W*.1+Math.random()*W*.8;y=-10}else{x=s<.875?-10:W+10;y=Math.random()*H*.3}const l=L();e={k:'msl',x,y,a:Math.atan2(l.y-y,l.x-x),v:45*sp,r:6}}
+e.t=0;e.base=e.a;enemies.push(e)}
 addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(keys[e.code])return;keys[e.code]=1;
 if(e.code==='Space'){if(state==='over'&&overT>0);else if(state!=='play'){reset();state='play'}else if(pm)detonate();else fire()}});
 addEventListener('keyup',e=>keys[e.code]=0);
-function kill(e,i){enemies.splice(i,1);score+=e.k==='air'?50:10;kills++;const nl=1+Math.floor(kills/5);if(nl>level){level=nl;waveMsg=1.5}boom(e.x,e.y,e.k==='air'?40:20,'#fa3')}
+function kill(e,i){enemies.splice(i,1);score+=e.k==='air'?50:10;kills++;const nl=1+Math.floor(kills/3);if(nl>level){level=nl;waveMsg=1.5}boom(e.x,e.y,e.k==='air'?40:20,'#fa3')}
 let overT=0;function upd(dt){sweep+=dt*1.5;overT-=dt;if(state!=='play')return;waveMsg-=dt;flash-=dt;
-spawnT-=dt;if(spawnT<=0){spawn();spawnT=Math.max(.3,2.6/spd())*(.6+Math.random()*.8)}
+
 if(pm){if(keys.ArrowLeft)pm.a-=2.8*dt;if(keys.ArrowRight)pm.a+=2.8*dt;if(keys.ArrowUp)pm.v=Math.min(600,pm.v+400*dt);if(keys.ArrowDown)pm.v=Math.max(80,pm.v-400*dt);
 pm.x+=Math.cos(pm.a)*pm.v*dt;pm.y+=Math.sin(pm.a)*pm.v*dt;pm.trail.push([pm.x,pm.y]);if(pm.trail.length>30)pm.trail.shift();
 if(pm.x<-20||pm.x>W+20||pm.y<-20||pm.y>H)pm=null}
 const l=L();
-for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.x+=e.vx*dt;e.y+=e.vy*dt;
-if(e.k==='air'){e.drop-=dt;if(e.drop<=0&&e.x>0&&e.x<W){e.drop=Math.max(1,3.5/spd());const d=Math.hypot(l.x-e.x,l.y-e.y),v=45*spd();enemies.push({k:'msl',x:e.x,y:e.y+10,vx:(l.x-e.x)/d*v,vy:(l.y-e.y)/d*v,r:6})}if(e.x<-60||e.x>W+60){enemies.splice(i,1);continue}}
-else if(Math.hypot(e.x-l.x,e.y-l.y)<24||e.y>H-20){enemies.splice(i,1);boom(e.x,e.y,30,'#f44');if(Math.hypot(e.x-l.x,e.y-l.y)<60){hp=0;flash=.3}continue}
+if(!enemies.length){spawnT-=dt;if(spawnT<=0){spawn();spawnT=.6}}
+for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.t+=dt;const lv=level-1;
+if(e.k==='air'&&e.dive>0){e.dive-=dt;if(e.dive<=0&&(e.x<0||e.x>W))e.dive=.5}
+else{const want=Math.atan2(l.y-e.y,l.x-e.x);let d=want-e.base;d=Math.atan2(Math.sin(d),Math.cos(d));const tr=.15+lv*.12;e.base+=Math.max(-tr*dt,Math.min(tr*dt,d))}
+e.a=e.base+(e.k==='air'&&e.dive>0?0:Math.min(.9,.04+lv*.07)*Math.sin(e.t*(1+lv*.35)));
+if(pm&&!(e.k==='air'&&e.dive>0)){const dx=e.x-pm.x,dy=e.y-pm.y,dd=Math.hypot(dx,dy),rd=50+lv*30;if(dd<rd){const side=Math.sign(Math.cos(pm.a)*dy-Math.sin(pm.a)*dx)||1,away=pm.a+side*Math.PI/2,st=Math.min(1.3,.08+lv*.16)*(1-dd/rd);let d=away-e.a;d=Math.atan2(Math.sin(d),Math.cos(d));e.a+=d*st;e.base+=d*st*.3*dt*(1+lv)}}
+e.vx=Math.cos(e.a)*e.v;e.vy=Math.sin(e.a)*e.v;e.x+=e.vx*dt;e.y+=e.vy*dt;
+if(e.x<-80||e.x>W+80||e.y<-80){enemies.splice(i,1);continue}
+if(Math.hypot(e.x-l.x,e.y-l.y)<24||e.y>H-20){enemies.splice(i,1);boom(e.x,e.y,30,'#f44');if(Math.hypot(e.x-l.x,e.y-l.y)<60){hp=0;flash=.3}continue}
 if(pm&&Math.hypot(e.x-pm.x,e.y-pm.y)<e.r+6){kill(e,i);boom(pm.x,pm.y,15,'#ff8');pm=null;continue}
 for(const s of shrap)if(Math.hypot(e.x-s.x,e.y-s.y)<e.r+3){kill(e,i);s.t=0;break}}
 shrap=shrap.filter(s=>(s.x+=s.vx*dt,s.y+=s.vy*dt,s.vx*=.985,s.vy*=.985,(s.t-=dt)>0));
