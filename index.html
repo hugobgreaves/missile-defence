@@ -16,6 +16,7 @@ function spawn(){const sp=Math.pow(1.1,level-1),x=W*.05+Math.random()*W*.9,y=-10
 addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(keys[e.code])return;keys[e.code]=1;
 if(e.code==='Space'){if(state==='over'&&overT>0);else if(state!=='play'){reset();state='play'}else if(pm)detonate();else fire()}});
 addEventListener('keyup',e=>keys[e.code]=0);
+function miss(e){score+=10*level;kills++;level=kills+1;waveMsg=1.2}
 function kill(e,i){enemies.splice(i,1);score+=10*level;kills++;level=kills+1;waveMsg=1.2;boom(e.x,e.y,e.k==='air'?40:20,'#fa3')}
 let overT=0;function upd(dt){sweep+=dt*1.5;overT-=dt;if(state!=='play')return;waveMsg-=dt;flash-=dt;
 
@@ -24,14 +25,15 @@ pm.x+=Math.cos(pm.a)*pm.v*dt;pm.y+=Math.sin(pm.a)*pm.v*dt;pm.trail.push([pm.x,pm
 if(pm.x<-20||pm.x>W+20||pm.y<-20||pm.y>H)pm=null}
 const l=L();
 if(!enemies.length){spawnT-=dt;if(spawnT<=0){spawn();spawnT=.6}}
-for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.t+=dt;const lv=level-1;
-if(e.k==='air'&&e.dive>0){e.dive-=dt;if(e.dive<=0&&(e.x<0||e.x>W))e.dive=.5}
-else{const want=Math.atan2(l.y-e.y,l.x-e.x);let d=want-e.base;d=Math.atan2(Math.sin(d),Math.cos(d));const tr=.15+lv*.12;e.base+=Math.max(-tr*dt,Math.min(tr*dt,d))}
-e.a=e.base+(e.k==='air'&&e.dive>0?0:(.04+lv*.07)*Math.sin(e.t*(1+lv*.35)));
-if(pm&&!(e.k==='air'&&e.dive>0)){const dx=e.x-pm.x,dy=e.y-pm.y,dd=Math.hypot(dx,dy),rd=50+lv*30;if(dd<rd){const side=Math.sign(Math.cos(pm.a)*dy-Math.sin(pm.a)*dx)||1,away=pm.a+side*Math.PI/2,st=(.08+lv*.16)*(1-dd/rd);let d=away-e.a;d=Math.atan2(Math.sin(d),Math.cos(d));e.a+=d*st;e.base+=d*st*.3*dt*(1+lv)}}
+for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.t+=dt;const lv=level-1;e.w=e.w||0;
+let bias=0;if(e.evT>0){e.evT-=dt;bias=e.evS*e.evA*Math.sin(Math.PI*(1-Math.max(0,e.evT)/e.evD))}
+else if(pm&&!e.evDone){const dx=e.x-pm.x,dy=e.y-pm.y,dd=Math.hypot(dx,dy);if(dd<90+lv*12&&(Math.cos(pm.a)*dx+Math.sin(pm.a)*dy)>0){e.evD=e.evT=.9;e.evS=Math.sign(Math.cos(pm.a)*dy-Math.sin(pm.a)*dx)||1;e.evA=Math.min(1.1,.25+lv*.06);e.evDone=1}}
+if(!pm)e.evDone=0;
+let d=Math.atan2(l.y-e.y,l.x-e.x)+bias-e.a;d=Math.atan2(Math.sin(d),Math.cos(d));
+const tr=.5+lv*.03,tw=Math.max(-tr,Math.min(tr,d*2.5));e.w+=Math.max(-tr*2.5*dt,Math.min(tr*2.5*dt,tw-e.w));e.a+=e.w*dt;
 e.vx=Math.cos(e.a)*e.v;e.vy=Math.sin(e.a)*e.v;e.x+=e.vx*dt;e.y+=e.vy*dt;
-if(e.x<-80||e.x>W+80||e.y<-80){enemies.splice(i,1);continue}
-if(Math.hypot(e.x-l.x,e.y-l.y)<24||e.y>H-20){enemies.splice(i,1);boom(e.x,e.y,30,'#f44');if(Math.hypot(e.x-l.x,e.y-l.y)<60){hp=0;flash=.3}continue}
+if(e.x<-30||e.x>W+30||e.y<-60){enemies.splice(i,1);miss(e);continue}
+if(Math.hypot(e.x-l.x,e.y-l.y)<24||e.y>H-20){enemies.splice(i,1);boom(e.x,e.y,30,'#f44');if(Math.hypot(e.x-l.x,e.y-l.y)<60){hp=0;flash=.3}else miss(e);continue}
 if(pm&&Math.hypot(e.x-pm.x,e.y-pm.y)<e.r+6){kill(e,i);boom(pm.x,pm.y,15,'#ff8');pm=null;continue}
 for(const s of shrap)if(Math.hypot(e.x-s.x,e.y-s.y)<e.r+3){kill(e,i);s.t=0;break}}
 shrap=shrap.filter(s=>(s.x+=s.vx*dt,s.y+=s.vy*dt,s.vx*=.985,s.vy*=.985,(s.t-=dt)>0));
