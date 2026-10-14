@@ -2,7 +2,7 @@
 <title>Missile Defence</title><style>html,body{margin:0;height:100%;background:#020a05;overflow:hidden}canvas{display:block;margin:auto}</style></head>
 <body><canvas id="c"></canvas><script>
 const MS=[['Shahed-136 drone top speed',51],['Cessna 172S cruise (124 kn)',64],['RPG-7 launch speed',115],['Average RPG-7 speed',200],['Boeing 737-800 cruise (~450 kn)',232],['Tomahawk cruise missile',247],['Harpoon anti-ship missile',292],['RPG-7 max speed',295],['Speed of sound (Mach 1)',343],['F-35 top speed (Mach 1.6, ~1,200 mph)',536],['BrahMos cruise missile (Mach 2.8)',960],['SR-71 Blackbird record (2,193 mph)',980],['Iskander burnout (Mach 5.9)',2024],['Kinzhal, claimed (Mach 10)',3430],['Avangard glide vehicle, claimed (Mach 20)',6860],['ICBM re-entry',7200],['Avangard upper claim (Mach 27)',9261]];
-const mps=lv=>200*Math.pow(1.15,lv-16),lvFor=v=>Math.max(1,16+Math.ceil(Math.log(v/200)/Math.log(1.15)-1e-9));
+const mps=lv=>200*Math.pow(1.15,lv-10),lvFor=v=>Math.max(1,10+Math.ceil(Math.log(v/200)/Math.log(1.15)-1e-9));
 const MLV={};for(const[n,v]of MS){const L=lvFor(v);(MLV[L]=MLV[L]||[]).push(n+' (≈'+v+' m/s)')}
 let msText='',msT=0;
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H;
@@ -10,7 +10,7 @@ function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}addEventListener('re
 const GR='#3f6',keys={};let state='start',score=0,hp=1,kills=0,level=1,hi=+(localStorage.getItem('md_hi')||0),best=+(localStorage.getItem('md_best')||1);
 let pm=null,enemies=[],shrap=[],parts=[],spawnLeft=0,spawnT=0,waveMsg=0,sweep=0,flash=0;
 const L=()=>({x:W/2,y:H-40});
-function reset(){msT=0;paused=false;score=0;hp=1;kills=0;level=1;pm=null;enemies=[];shrap=[];parts=[];startWave()}
+function reset(){msT=0;setTimeout(onLevel,0);paused=false;score=0;hp=1;kills=0;level=1;pm=null;enemies=[];shrap=[];parts=[];startWave()}
 function startWave(){spawnT=2.5;waveMsg=2}
 const spd=()=>1+kills*.03;
 function boom(x,y,n,c){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=Math.random()*180+30;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:.4+Math.random()*.6,c})}}
