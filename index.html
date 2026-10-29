@@ -1,10 +1,11 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Missile Defence</title><style>html,body{margin:0;height:100%;background:#020a05;overflow:hidden}canvas{display:block;margin:auto}</style></head>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<title>Missile Defence</title><style>html,body{margin:0;height:100%;background:#020a05;overflow:hidden;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}canvas{touch-action:none}canvas{display:block;margin:auto}</style></head>
 <body><canvas id="c"></canvas><script>
 const MS=[["DRONE", "Shahed-136 top speed", 51], ["AIRCRAFT", "Cessna 172S cruise", 64], ["ROCKET", "RPG-7 launch", 115], ["ROCKET", "RPG-7 average", 200], ["AIRCRAFT", "Boeing 737-800 cruise", 232], ["SUBSONIC CRUISE", "Tomahawk", 247], ["SUBSONIC CRUISE", "Kh-101, claimed (max Mach 0.79)", 269], ["SUBSONIC CRUISE", "Storm Shadow / SCALP (Mach 0.8)", 274], ["SUBSONIC CRUISE", "Kalibr 3M-14, claimed (Mach 0.8)", 274], ["SUBSONIC CRUISE", "JASSM-ER (Mach 0.8)", 274], ["SUBSONIC CRUISE", "Harpoon (Mach 0.85)", 292], ["ROCKET", "RPG-7 max", 295], ["SUBSONIC CRUISE", "Exocet AM39 (Mach 0.93)", 319], ["SUBSONIC CRUISE", "Naval Strike Missile (Mach 0.93)", 319], ["REFERENCE", "Speed of sound (Mach 1)", 343], ["AIRCRAFT", "F-35 top speed (Mach 1.6)", 536], ["SUPERSONIC CRUISE", "P-800 Oniks, claimed (Mach 2.2)", 750], ["SUPERSONIC CRUISE", "BrahMos (Mach 2.8)", 960], ["AIRCRAFT", "SR-71 Blackbird record", 980], ["BALLISTIC", "ATACMS (Mach 2.9)", 995], ["SUPERSONIC CRUISE", "Kalibr 3M54 terminal sprint, claimed (Mach 2.9)", 995], ["SUPERSONIC CRUISE", "YJ-12, claimed (Mach 3)", 1029], ["INTERCEPTOR", "AIM-120 AMRAAM (Mach 4)", 1372], ["BALLISTIC", "Fateh-110, claimed (Mach 4)", 1372], ["BALLISTIC", "SCUD-B max velocity", 1500], ["SUPERSONIC CRUISE", "Kh-22, claimed (Mach 4.6)", 1578], ["INTERCEPTOR", "Patriot PAC-3, est. (Mach 5+)", 1715], ["BALLISTIC", "Iskander burnout (Mach 5.9)", 2024], ["INTERCEPTOR", "S-400 48N6, claimed (Mach 6)", 2058], ["INTERCEPTOR", "THAAD, est.", 2800], ["INTERCEPTOR", "SM-3 Block IA/IB, est.", 3000], ["HYPERSONIC", "Zircon, claimed (Mach 9)", 3087], ["HYPERSONIC", "Kinzhal, claimed (Mach 10)", 3430], ["HYPERSONIC", "DF-17, claimed (Mach 5-10, upper)", 3430], ["BALLISTIC", "DF-21, est. (Mach 10)", 3430], ["INTERCEPTOR", "SM-3 Block IIA, est.", 4500], ["BALLISTIC", "Minuteman III burnout", 6706], ["HYPERSONIC", "Avangard, claimed (Mach 20)", 6860], ["BALLISTIC", "ICBM re-entry vehicle", 7200], ["BALLISTIC", "Trident II D5 terminal (Mach 24)", 8060], ["HYPERSONIC", "Avangard upper claim (Mach 27)", 9261]];
 const ANCH=[[1, 51], [3, 64], [7, 115], [11, 200], [12, 232], [13, 247], [14, 269], [15, 292], [16, 319], [17, 343], [18, 536], [20, 750], [22, 960], [23, 995], [24, 1029], [25, 1372], [26, 1500], [27, 1578], [28, 1715], [29, 2024], [30, 2800], [31, 3000], [32, 3430], [33, 4500], [36, 6706], [37, 7200], [38, 8060], [39, 9261]],VL={"51": 1, "64": 3, "115": 7, "200": 11, "232": 12, "247": 13, "269": 14, "274": 14, "292": 15, "295": 15, "319": 16, "343": 17, "536": 18, "750": 20, "960": 22, "980": 22, "995": 23, "1029": 24, "1372": 25, "1500": 26, "1578": 27, "1715": 28, "2024": 29, "2058": 29, "2800": 30, "3000": 31, "3087": 31, "3430": 32, "4500": 33, "6706": 36, "6860": 36, "7200": 37, "8060": 38, "9261": 39};const mps=lv=>{if(lv<=1)return 51;const A=ANCH,last=A[A.length-1];if(lv>=last[0])return last[1]*Math.pow(1.15,lv-last[0]);for(let i=0;i<A.length-1;i++){const[a,va]=A[i],[b,vb]=A[i+1];if(lv>=a&&lv<=b)return va*Math.pow(vb/va,(lv-a)/(b-a))}},lvFor=v=>VL[v]||1;
 const MLV={};for(const[c,n,v]of MS){const L=lvFor(v);(MLV[L]=MLV[L]||[]).push(c+': '+n+' (≈'+v+' m/s)')}
 let msText='',msT=0;
+const MOB=/[?&]mobile=1/.test(location.search)||(!/[?&]mobile=0/.test(location.search)&&matchMedia('(pointer: coarse)').matches&&('ontouchstart' in window||navigator.maxTouchPoints>0)&&Math.min(screen.width,screen.height)<=900);
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H;
 let SW,SH;let ZOOM=.5,SPR=1.5;function rs(){SW=cv.width=innerWidth;SH=cv.height=innerHeight;W=SW/ZOOM;H=SH/ZOOM}addEventListener('resize',rs);rs();
 const GR='#3f6',keys={};let state='start',score=0,hp=1,kills=0,level=1,hi=+(localStorage.getItem('md_hi')||0),best=+(localStorage.getItem('md_best')||1);
@@ -17,19 +18,25 @@ function boom(x,y,n,c,k=1){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=(Ma
 function fire(){const l=L();pm={x:l.x,y:l.y-20,a:-Math.PI/2,v:260,trail:[]}}
 const LETHAL_M=30,FRAG_T=.35,FRAG_HOLD=.15;let bursts=[];
 function detonate(){const b={x:pm.x,y:pm.y,vx:Math.cos(pm.a)*pm.v*.3,vy:Math.sin(pm.a)*pm.v*.3,age:0,r:0};bursts.push(b);for(let i=0;i<24;i++){const a=i/24*6.28;shrap.push({b,a,x:pm.x,y:pm.y,t:FRAG_T+FRAG_HOLD})}boom(pm.x,pm.y,30,'#ff8',.3);pm=null}
-function spawn(){let x=W*.05+Math.random()*W*.9,y=-10,l=L(),an=Math.atan2(l.y-y,l.x-x);enemies.push({k:'msl',x,y,a:an,base:an,v:mps(level)*SH/500,r:6,t:0})}
+function spawn(){if(MOB){const x=W*.04+Math.random()*W*.92,tx=Math.max(W*.04,Math.min(W*.96,x+(Math.random()-.5)*W*.6)),an=Math.atan2(H+10,tx-x);enemies.push({k:'msl',x,y:-10,a:an,base:an,v:mps(level)*SH/500,r:6,t:0,w:0});return}let x=W*.05+Math.random()*W*.9,y=-10,l=L(),an=Math.atan2(l.y-y,l.x-x);enemies.push({k:'msl',x,y,a:an,base:an,v:mps(level)*SH/500,r:6,t:0})}
 addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(keys[e.code])return;keys[e.code]=1;
 if(e.code==='KeyP'||e.code==='Escape'){togglePause();return}
 if(paused)return;
 if(e.code==='Space'){if(state==='over'&&overT>0);else if(state!=='play'){reset();state='play'}else if(pm)detonate();else fire()}});
 let paused=false;const PB=()=>({x:SW-56,y:40,w:40,h:32});
-cv.addEventListener('pointerdown',ev=>{const b=PB(),r=cv.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top;if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h)togglePause()});
+cv.addEventListener('pointerdown',ev=>{ev.preventDefault();const b=PB(),r=cv.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top;if(state==='play'&&x>=b.x-8&&x<=b.x+b.w+8&&y>=b.y-8&&y<=b.y+b.h+8){togglePause();return}if(!MOB||paused)return;if(state!=='play'){if(state==='start'){reset();state='play'}return}
+const wx=x/ZOOM,wy=y/ZOOM,HR=48/ZOOM;let bi=-1,bd=1e9;enemies.forEach((e,i)=>{const d=Math.hypot(e.x-wx,e.y-wy);if(d<bd){bd=d;bi=i}});if(bi>=0&&bd<=HR){const e=enemies[bi];kill(e,bi);boom(e.x,e.y,30,'#ff8',.6);bursts.push({x:e.x,y:e.y,vx:0,vy:0,age:0,r:0})}else boom(wx,wy,6,'rgba(120,255,160,.8)',.3)},{passive:false});
+['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 addEventListener('blur',()=>{for(const k in keys)keys[k]=0});
 addEventListener('keyup',e=>keys[e.code]=0);
 let msList=[],msDur=4;function onLevel(){if(MLV[level]){msList=MLV[level];msDur=Math.max(4,2.5*msList.length);msT=msDur}}
 function miss(e){score+=10*level;kills++;level=kills+1;waveMsg=1.2;onLevel()}
 function kill(e,i){enemies.splice(i,1);score+=10*level;kills++;level=kills+1;waveMsg=1.2;onLevel();boom(e.x,e.y,e.k==='air'?40:20,'#fa3')}
-let overT=0;function upd(dt){if(paused)return;sweep+=dt*1.5;overT-=dt;msT-=dt;if(state!=='play')return;waveMsg-=dt;flash-=dt;
+let overT=0;function upd(dt){if(paused)return;sweep+=dt*1.5;overT-=dt;msT-=dt;if(MOB&&state==='over'&&overT<=0){reset();state='play'}if(state!=='play')return;
+if(MOB){parts=parts.filter(p=>(p.x+=p.vx*dt,p.y+=p.vy*dt,(p.t-=dt)>0));for(const b of bursts){b.age+=dt;b.r=LETHAL_M*SH/500*Math.min(1,b.age/FRAG_T)}bursts=bursts.filter(b=>b.age<FRAG_T+FRAG_HOLD);
+if(!enemies.length){spawnT-=dt;if(spawnT<=0){spawn();spawnT=.6}}
+for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];e.t+=dt;e.v=mps(level)*SH/500;e.vx=Math.cos(e.a)*e.v;e.vy=Math.sin(e.a)*e.v;e.x+=e.vx*dt;e.y+=e.vy*dt;if(e.x<0||e.x>W){e.a=Math.PI-e.a;e.x=Math.max(0,Math.min(W,e.x))}
+if(e.y>=H-26){boom(e.x,H-26,80,'#f44');flash=.4;state='over';overT=1.8;if(level>best){best=level;localStorage.setItem('md_best',best)}if(score>hi){hi=score;localStorage.setItem('md_hi',hi)}return}}return}waveMsg-=dt;flash-=dt;
 
 if(pm){if(keys.ArrowLeft)pm.a-=2.8*dt;if(keys.ArrowRight)pm.a+=2.8*dt;if(keys.ArrowUp)pm.v=Math.min(600,pm.v+400*dt);if(keys.ArrowDown)pm.v=Math.max(80,pm.v-400*dt);
 pm.x+=Math.cos(pm.a)*pm.v*dt;pm.y+=Math.sin(pm.a)*pm.v*dt;pm.trail.push([pm.x,pm.y]);if(pm.trail.length>30)pm.trail.shift();
@@ -57,7 +64,7 @@ function draw(){g.setTransform(ZOOM,0,0,ZOOM,0,0);g.fillStyle='#020a05';g.fillRe
 g.strokeStyle='rgba(60,255,100,.12)';g.lineWidth=1;for(let st=50*SH/500,r=st;r<R;r+=st){g.beginPath();g.arc(l.x,l.y,r,Math.PI,0);g.stroke()}
 for(let a=0;a<=6;a++){g.beginPath();g.moveTo(l.x,l.y);g.lineTo(l.x-Math.cos(a/6*Math.PI)*R,l.y-Math.sin(a/6*Math.PI)*R);g.stroke()}
 const sa=Math.PI+(sweep%Math.PI);g.fillStyle='rgba(60,255,100,.07)';g.beginPath();g.moveTo(l.x,l.y);g.arc(l.x,l.y,R,sa-.25,sa);g.fill();
-g.fillStyle=GR;g.fillRect(0,H-26,W,1);g.save();g.translate(l.x,l.y);g.scale(SPR,SPR);g.fillRect(-22,-6,44,14);g.beginPath();g.moveTo(-8,-6);g.lineTo(0,-22);g.lineTo(8,-6);g.fill();g.restore();
+g.fillStyle=MOB?'#f44':GR;g.fillRect(0,H-26,W,MOB?3:1);if(!MOB){g.save();g.translate(l.x,l.y);g.scale(SPR,SPR);g.fillRect(-22,-6,44,14);g.beginPath();g.moveTo(-8,-6);g.lineTo(0,-22);g.lineTo(8,-6);g.fill();g.restore()}
 for(const e of enemies){g.save();g.translate(e.x,e.y);g.rotate(Math.atan2(e.vy,e.vx));g.scale(SPR,SPR);g.fillStyle='#f44';g.strokeStyle='#f44';
 if(e.k==='air'){g.beginPath();g.moveTo(14,0);g.lineTo(-10,-12);g.lineTo(-6,0);g.lineTo(-10,12);g.closePath();g.fill()}else{g.fillRect(-7,-2,14,4);g.globalAlpha=.4;g.fillRect(-30,-1,23,2)}g.restore()}
 if(pm){g.strokeStyle='rgba(120,255,160,.5)';g.beginPath();pm.trail.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();
@@ -71,6 +78,7 @@ if(state==='play'&&msT>0){msText=msList[Math.min(msList.length-1,Math.floor((msD
 if(state==='play'){const b=PB();g.strokeStyle=GR;g.lineWidth=1.5;g.strokeRect(b.x,b.y,b.w,b.h);g.fillStyle=GR;if(paused){g.beginPath();g.moveTo(b.x+15,b.y+8);g.lineTo(b.x+28,b.y+16);g.lineTo(b.x+15,b.y+24);g.fill()}else{g.fillRect(b.x+13,b.y+8,5,16);g.fillRect(b.x+22,b.y+8,5,16)}
 if(paused){g.fillStyle='rgba(0,10,4,.6)';g.fillRect(0,0,W,H);txt('PAUSED',W/2,H/2,44);txt('P / ESC or button to resume',W/2,H/2+36,16)}}
 if(state!=='play'){g.fillStyle='rgba(0,10,4,.75)';g.fillRect(0,0,W,H);const y=H/2-110;
+if(MOB){const y=H/2-60,f=Math.min(36,W/12);txt(state==='over'?'MISSILES WIN':'MISSILE DEFENCE',W/2,y,f,state==='over'?'#f44':GR);if(state==='over'){txt('LEVEL REACHED '+level+'  ·  BEST '+best,W/2,y+36,Math.min(16,W/26));txt('RESTARTING…',W/2,y+80,18,'#ff8')}else{['Tap a missile to blow it up','Missiles drop from anywhere at the top','One reaching the bottom = game over'].forEach((s,i)=>txt(s,W/2,y+44+i*26,Math.min(16,W/24)));txt('TAP TO START',W/2,y+150,22,'#ff8')}return}
 txt(state==='over'?'LAUNCHER DESTROYED':'MISSILE DEFENCE',W/2,y,40,state==='over'?'#f44':GR);
 if(state==='over')txt('LEVEL REACHED '+level+'   BEST LEVEL '+best+'   SCORE '+score,W/2,y+40,20);
 ['SPACE  fire interceptor','SPACE (in flight)  detonate → shrapnel','← →  steer missile','↑ ↓  speed up / slow down','One hit on the launcher = game over'].forEach((s,i)=>txt(s,W/2,y+90+i*28,18));
